@@ -25,6 +25,10 @@ from ..services.weibo import search_weibo
 from ..services.ao3 import search_ao3
 from ..services.myanimelist import search_myanimelist
 
+# === 明日方舟专用 ===
+from ..services.arknights_story import search_arknights_story
+from ..services.arknights_lore import search_arknights_lore
+
 router = APIRouter(prefix="/api", tags=["search"])
 
 # 数据源映射
@@ -49,6 +53,9 @@ SOURCE_MAP = {
     "weibo": search_weibo,
     "ao3": search_ao3,
     "myanimelist": search_myanimelist,
+    # 明日方舟专用
+    "arknights_story": search_arknights_story,
+    "arknights_lore": search_arknights_lore,
 }
 
 ALL_SOURCES = list(SOURCE_MAP.keys())
@@ -120,5 +127,8 @@ async def list_sources():
             {"id": "weibo", "name": "微博", "desc": "超话讨论/同人创作", "group": "社区"},
             {"id": "ao3", "name": "AO3", "desc": "同人作品标签/关系分析", "group": "创作"},
             {"id": "myanimelist", "name": "MyAnimeList", "desc": "动漫角色数据库", "group": "百科"},
+            # 明日方舟专用
+            {"id": "arknights_story", "name": "方舟剧情", "desc": "全部活动剧情原文", "group": "方舟"},
+            {"id": "arknights_lore", "name": "方舟设定库", "desc": "1000+角色详细设定+人物关系", "group": "方舟"},
         ]
     }
