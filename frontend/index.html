@@ -257,22 +257,104 @@
             </div>
 
             <!-- ===== 其他Tab ===== -->
-            <div v-if="currentTab === 'library'" class="fade-in">
-                <div class="text-center py-12 text-gray-500">
-                    <div class="text-4xl mb-3 opacity-50">📚</div>
-                    <div>卡片库功能开发中</div>
+            <div v-if="currentTab === 'library'" class="fade-in space-y-4">
+                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm font-medium text-gray-400">📚 卡片库</span>
+                        <button @click="loadLibrary" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg transition-colors">🔄 刷新</button>
+                    </div>
+                    <div class="flex gap-3 mb-4">
+                        <input v-model="libSearch" @keyup.enter="loadLibrary" class="flex-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" placeholder="搜索卡片库..." />
+                        <button @click="loadLibrary" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-xl text-sm transition-colors">搜索</button>
+                    </div>
+                    <div v-if="libraryCards.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div v-for="c in libraryCards" :key="c.id" @click="viewLibraryCard(c)" class="bg-gray-900/50 rounded-xl p-4 border border-gray-700 hover:border-purple-400 cursor-pointer transition-colors">
+                            <div class="font-medium text-gray-100">{{ c.name }}</div>
+                            <div class="text-xs text-purple-400 mt-1">{{ c.source || '手动创建' }}</div>
+                            <div class="text-sm text-gray-500 mt-2 line-clamp-2">{{ c.description?.substring(0, 80) }}</div>
+                            <div class="text-xs text-gray-600 mt-2">{{ c.created_at?.split('T')[0] }}</div>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-12 text-gray-500">
+                        <div class="text-4xl mb-3 opacity-50">📚</div>
+                        <div>卡片库为空</div>
+                        <div class="text-xs mt-1">生成角色卡后可保存到这里</div>
+                    </div>
                 </div>
             </div>
-            <div v-if="currentTab === 'lorebook'" class="fade-in">
-                <div class="text-center py-12 text-gray-500">
-                    <div class="text-4xl mb-3 opacity-50">🕸️</div>
-                    <div>世界书功能开发中</div>
+            <div v-if="currentTab === 'lorebook'" class="fade-in space-y-4">
+                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm font-medium text-gray-400">🕸️ 世界书</span>
+                        <button @click="showCreateLorebook = true" class="text-xs bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg transition-colors">+ 新建</button>
+                    </div>
+                    <div v-if="lorebooks.length" class="space-y-3">
+                        <div v-for="lb in lorebooks" :key="lb.id" class="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
+                            <div class="flex items-center justify-between">
+                                <div class="font-medium text-gray-100">{{ lb.name }}</div>
+                                <span class="text-xs text-gray-500">{{ lb.entries?.length || 0 }} 条目</span>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-1">{{ lb.description || '无描述' }}</div>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-12 text-gray-500">
+                        <div class="text-4xl mb-3 opacity-50">🕸️</div>
+                        <div>还没有世界书</div>
+                    </div>
+                </div>
+                <!-- 新建世界书弹窗 -->
+                <div v-if="showCreateLorebook" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showCreateLorebook = false">
+                    <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 w-full max-w-md">
+                        <h3 class="text-lg font-medium text-gray-100 mb-4">新建世界书</h3>
+                        <div class="space-y-3">
+                            <input v-model="newLorebookName" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 focus:outline-none focus:border-purple-400" placeholder="名称" />
+                            <textarea v-model="newLorebookDesc" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 focus:outline-none focus:border-purple-400" placeholder="描述（可选）" rows="3"></textarea>
+                            <div class="flex gap-2 justify-end">
+                                <button @click="showCreateLorebook = false" class="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">取消</button>
+                                <button @click="createLorebook" class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors">创建</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div v-if="currentTab === 'status'" class="fade-in">
-                <div class="text-center py-12 text-gray-500">
-                    <div class="text-4xl mb-3 opacity-50">📊</div>
-                    <div>状态栏功能开发中</div>
+            <div v-if="currentTab === 'status'" class="fade-in space-y-4">
+                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm font-medium text-gray-400">📊 状态栏</span>
+                        <select v-model="statusPreset" class="bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-purple-400">
+                            <option v-for="p in statusPresets" :key="p.id" :value="p.id">{{ p.name }}</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-3 mb-4">
+                        <input v-model="statusCharName" class="flex-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" placeholder="输入角色名" />
+                        <button @click="generateStatus" :disabled="statusLoading" class="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 px-4 py-2 rounded-xl text-sm transition-colors">
+                            {{ statusLoading ? '生成中...' : '🧠 AI 生成' }}
+                        </button>
+                    </div>
+                    <!-- 状态栏预设字段 -->
+                    <div v-if="currentStatusFields.length" class="space-y-3">
+                        <div v-for="field in currentStatusFields" :key="field.key" class="flex items-center gap-3">
+                            <span class="text-xs text-gray-400 w-16 text-right">{{ field.label }}</span>
+                            <template v-if="field.type === 'range'">
+                                <div class="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div class="status-bar h-full rounded-full bg-purple-500" :style="{ width: (statusFormData[field.key] || field.value || 0) + '%' }"></div>
+                                </div>
+                                <input type="number" v-model="statusFormData[field.key]" :min="field.min" :max="field.max" class="w-16 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-gray-100 text-center" />
+                            </template>
+                            <template v-else-if="field.type === 'select'">
+                                <select v-model="statusFormData[field.key]" class="bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-100">
+                                    <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+                                </select>
+                            </template>
+                            <template v-else>
+                                <input v-model="statusFormData[field.key]" class="flex-1 bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-100" :placeholder="field.description" />
+                            </template>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-8 text-gray-500">
+                        <div class="text-3xl mb-2 opacity-50">📊</div>
+                        <div class="text-sm">选择预设并输入角色名，点击生成</div>
+                    </div>
                 </div>
             </div>
             <div v-if="currentTab === 'settings'" class="fade-in">
@@ -305,7 +387,7 @@
 </div>
 
 <script>
-const { createApp, ref, computed } = Vue;
+const { createApp, ref, computed, watch, onMounted } = Vue;
 
 createApp({
     setup() {
@@ -437,6 +519,91 @@ createApp({
         // Settings
         const settings = ref({ model: 'mimo-v2.5-pro' });
 
+        // Library
+        const libraryCards = ref([]);
+        const libSearch = ref('');
+        async function loadLibrary() {
+            try {
+                const resp = await fetch(`/api/library/cards?search=${encodeURIComponent(libSearch.value)}`);
+                const data = await resp.json();
+                libraryCards.value = data.cards || [];
+            } catch (e) { console.error(e); }
+        }
+        function viewLibraryCard(c) {
+            genCard.value = c;
+            currentTab.value = 'home';
+            activeResultTab.value = 'card';
+        }
+
+        // Lorebooks
+        const lorebooks = ref([]);
+        const showCreateLorebook = ref(false);
+        const newLorebookName = ref('');
+        const newLorebookDesc = ref('');
+        async function loadLorebooks() {
+            try {
+                const resp = await fetch('/api/library/lorebooks');
+                const data = await resp.json();
+                lorebooks.value = data.lorebooks || [];
+            } catch (e) { console.error(e); }
+        }
+        async function createLorebook() {
+            if (!newLorebookName.value.trim()) return;
+            try {
+                await fetch('/api/library/lorebooks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newLorebookName.value, description: newLorebookDesc.value }) });
+                showCreateLorebook.value = false;
+                newLorebookName.value = '';
+                newLorebookDesc.value = '';
+                loadLorebooks();
+            } catch (e) { console.error(e); }
+        }
+
+        // Status presets
+        const statusPreset = ref('default');
+        const statusPresets = ref([]);
+        const statusCharName = ref('');
+        const statusLoading = ref(false);
+        const statusFormData = ref({});
+        const currentStatusFields = computed(() => {
+            const p = statusPresets.value.find(x => x.id === statusPreset.value);
+            if (!p) return [];
+            return (p.data?.categories || []).flatMap(c => c.fields || []);
+        });
+        async function loadStatusPresets() {
+            try {
+                const resp = await fetch('/api/status-sheet/presets');
+                const data = await resp.json();
+                statusPresets.value = data.presets || [];
+            } catch (e) { console.error(e); }
+        }
+        async function generateStatus() {
+            if (!statusCharName.value.trim()) return;
+            statusLoading.value = true;
+            try {
+                const resp = await fetch('/api/status-sheet/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ character_name: statusCharName.value, preset: statusPreset.value }) });
+                const data = await resp.json();
+                if (data.data) {
+                    Object.assign(statusFormData.value, data.data);
+                    statusData.value.name = data.data.name || statusCharName.value;
+                    statusData.value.mood = data.data.mood || '😊';
+                    statusData.value.location = data.data.location || '';
+                    statusData.value.health = data.data.health || 85;
+                    statusData.value.energy = data.data.energy || 70;
+                    statusData.value.affection = data.data.affection || 50;
+                    statusData.value.trust = data.data.trust || 50;
+                }
+            } catch (e) { console.error(e); }
+            statusLoading.value = false;
+        }
+
+        // Load on tab switch
+        watch(currentTab, (val) => {
+            if (val === 'library') loadLibrary();
+            if (val === 'lorebook') loadLorebooks();
+            if (val === 'status') loadStatusPresets();
+        });
+        onMounted(() => { loadStatusPresets(); });
+
         // Save/Export
         async function saveCard() {
             if (!genCard.value) return;
@@ -454,6 +621,9 @@ createApp({
             resultTabs, activeResultTab, selectResult, doSearch,
             generating, genCard, chatMessages, lorebookEntries, genStats, cardFields, doGenerate,
             statusData, statusBars, settings, saveCard, exportCard,
+            libraryCards, libSearch, loadLibrary, viewLibraryCard,
+            lorebooks, showCreateLorebook, newLorebookName, newLorebookDesc, loadLorebooks, createLorebook,
+            statusPreset, statusPresets, statusCharName, statusLoading, statusFormData, currentStatusFields, loadStatusPresets, generateStatus,
         };
     }
 }).mount('#app');
