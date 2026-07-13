@@ -1,4 +1,4 @@
-"""AI生成路由"""
+"""AI生成路由 - 完整功能"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
@@ -10,11 +10,16 @@ from ..services.analyzer import (
     generate_character_card,
     synthesize_description,
     generate_dialogue,
+    write_lorebook_entry,
+    generate_lorebook,
+    process_long_text,
 )
 from ..models.character import CharacterCard
 
 router = APIRouter(prefix="/api", tags=["generate"])
 
+
+# === 请求模型 ===
 
 class GenerateRequest(BaseModel):
     """生成请求"""
@@ -43,6 +48,26 @@ class WorldConceptsRequest(BaseModel):
     """世界观提取请求"""
     text: str
 
+
+class LorebookEntryRequest(BaseModel):
+    """世界书条目请求"""
+    concept: str
+    context: str = ""
+
+
+class LorebookRequest(BaseModel):
+    """世界书生成请求"""
+    text: str
+    source_name: str = ""
+
+
+class LongTextRequest(BaseModel):
+    """长文炼化请求"""
+    text: str
+    title: str = ""
+
+
+# === AI 生成端点 ===
 
 @router.post("/generate")
 async def generate_character(req: GenerateRequest):
@@ -84,6 +109,47 @@ async def api_extract_world_concepts(req: WorldConceptsRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# === 世界书端点 ===
+
+@router.post("/lorebook/entry")
+async def api_lorebook_entry(req: LorebookEntryRequest):
+    """生成单个世界书条目"""
+    try:
+        entry = await write_lorebook_entry(req.concept, req.context)
+        return {"status": "ok", "entry": entry}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/lorebook/generate")
+async def api_generate_lorebook(req: LorebookRequest):
+    """从文本自动生成完整世界书"""
+    try:
+        entries = await generate_lorebook(req.text, req.source_name)
+        return {
+            "status": "ok",
+            "entries": entries,
+            "count": len(entries),
+            "format": "SillyTavern Lorebook",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# === 长文炼化端点 ===
+
+@router.post("/long-text")
+async def api_long_text(req: LongTextRequest):
+    """长文炼化 - 从长文本生成角色信息和世界书"""
+    try:
+        result = await process_long_text(req.text, req.title)
+        return {"status": "ok", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# === 导出端点 ===
 
 @router.post("/export/card")
 async def export_card(req: CardExportRequest):

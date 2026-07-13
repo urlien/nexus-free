@@ -152,6 +152,86 @@ async def generate_dialogue(info: CharacterInfo, scenario: str = "") -> str:
     return await call_llm(prompt, system=system)
 
 
+async def write_lorebook_entry(concept: str, context: str = "") -> dict:
+    """生成世界书条目"""
+    system = """你是SillyTavern世界书条目专家。根据概念生成详细的世界书条目。
+输出JSON：
+{
+  "title": "条目标题",
+  "content": "200-5000字的详细条目内容（markdown格式）",
+  "keywords": ["触发关键词1", "触发关键词2"],
+  "category": "分类（人物/地点/组织/物品/事件/概念）"
+}"""
+
+    prompt = f"""请为以下概念生成世界书条目：
+概念：{concept}
+上下文：{context[:3000] if context else '无'}
+
+要求：内容详实，适合作为AI角色扮演的世界观参考。"""
+
+    return await call_llm_json(prompt, system=system)
+
+
+async def generate_lorebook(text: str, source_name: str = "") -> list:
+    """从文本自动生成完整世界书（多条目）"""
+    system = """你是世界书生成专家。从给定文本中识别所有值得记录的世界观概念，
+为每个概念生成一个世界书条目。
+输出JSON数组：
+[
+  {
+    "title": "条目标题",
+    "content": "详细内容",
+    "keywords": ["触发词"],
+    "category": "分类"
+  }
+]
+
+识别范围：地名、组织、种族、魔法/科技体系、历史事件、重要物品、习俗节日等。"""
+
+    prompt = f"""请从以下文本中提取世界观概念并生成世界书条目：
+来源：{source_name}
+
+---
+{text[:8000]}
+---
+
+每个条目content至少100字。"""
+
+    result = await call_llm_json(prompt, system=system)
+    return result if isinstance(result, list) else result.get("entries", [])
+
+
+async def process_long_text(text: str, title: str = "") -> dict:
+    """长文炼化：将长文本转为角色卡"""
+    # 分段处理（每段最多6000字）
+    segments = []
+    for i in range(0, len(text), 6000):
+        segments.append(text[i:i+6000])
+
+    all_characters = []
+    all_world_concepts = []
+
+    for i, seg in enumerate(segments[:5]):  # 最多处理5段
+        # 提取角色
+        chars = await extract_character_info(f"段落{i+1}角色", seg, title)
+        if chars.name:
+            all_characters.append(chars)
+
+        # 提取世界观
+        concepts = await extract_world_concepts(seg)
+        if concepts and "error" not in concepts:
+            all_world_concepts.append(concepts)
+
+    # 合并结果
+    return {
+        "title": title,
+        "characters_found": len(all_characters),
+        "characters": [c.model_dump() for c in all_characters],
+        "world_concepts": all_world_concepts,
+        "segments_processed": min(len(segments), 5),
+    }
+
+
 async def generate_character_card(name: str, raw_text: str, source: str = "") -> CharacterCard:
     """完整流程：从原始文本生成角色卡"""
     # 1. 提取角色信息
