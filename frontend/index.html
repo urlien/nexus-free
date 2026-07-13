@@ -6,6 +6,7 @@
     <title>Nexus Free - 虚拟角色检索引擎</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/3d-force-graph"></script>
     <script>
     tailwindcss.config = {
         darkMode: 'class',
@@ -276,8 +277,9 @@
                             <textarea v-model="megaText" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" rows="8" placeholder="粘贴世界观设定、背景故事、Wiki页面等...&#10;&#10;AI将自动识别：地名、组织、种族、魔法/科技体系、历史事件、重要物品、习俗节日等"></textarea>
                         </div>
                         <div class="flex gap-3">
-                            <button @click="doMegaLorebook" :disabled="megaLoading" class="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 px-6 py-2.5 rounded-xl font-medium transition-colors">
-                                {{ megaLoading ? 'AI 生成中...' : '🧠 自动生成世界书' }}
+                            <button @click="doMegaLorebook" :disabled="megaLoading" class="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 px-6 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2">
+                                <svg v-if="megaLoading" class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                {{ megaLoading ? 'AI 构建中...' : '🧠 自动生成世界书' }}
                             </button>
                             <button @click="doExtractWorld" :disabled="megaLoading" class="bg-gray-700 hover:bg-gray-600 px-4 py-2.5 rounded-xl transition-colors">
                                 🔍 仅提取概念
@@ -285,11 +287,34 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 3D知识图谱 -->
+                <div v-show="graphNodes.length" class="bg-gray-800/50 rounded-2xl border border-gray-700 overflow-hidden">
+                    <div class="flex items-center justify-between p-3 border-b border-gray-700">
+                        <span class="text-sm font-medium text-gray-400">🌐 知识图谱</span>
+                        <div class="flex gap-2">
+                            <button @click="resetGraph" class="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded">重置视角</button>
+                            <button @click="toggleGraphPhysics" class="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded">{{ graphPhysics ? '暂停' : '恢复' }}物理</button>
+                        </div>
+                    </div>
+                    <div id="graph3d" style="height: 400px;"></div>
+                    <!-- 图例 -->
+                    <div class="flex flex-wrap gap-3 p-3 border-t border-gray-700">
+                        <div v-for="(color, type) in graphColors" :key="type" class="flex items-center gap-1">
+                            <div class="w-3 h-3 rounded-full" :style="{ background: color }"></div>
+                            <span class="text-xs text-gray-500">{{ type }}</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 生成结果 -->
                 <div v-if="megaEntries.length" class="space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-400">生成结果 ({{ megaEntries.length }} 条目)</span>
-                        <button @click="saveMegaLorebook" class="text-xs bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg transition-colors">💾 保存到世界书库</button>
+                        <div class="flex gap-2">
+                            <button @click="buildGraph" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg transition-colors">🌐 生成图谱</button>
+                            <button @click="saveMegaLorebook" class="text-xs bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg transition-colors">💾 保存到世界书库</button>
+                        </div>
                     </div>
                     <div v-for="(entry, i) in megaEntries" :key="i" class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
                         <div class="flex items-center justify-between mb-2">
@@ -596,6 +621,99 @@ createApp({
         // Settings
         const settings = ref({ model: 'mimo-v2.5-pro' });
 
+        // 3D Graph
+        const graphNodes = ref([]);
+        const graphLinks = ref([]);
+        let graphInstance = null;
+        const graphPhysics = ref(true);
+        const graphColors = {
+            '人物': '#c084fc',
+            '地点': '#4ade80',
+            '组织': '#f97316',
+            '物品': '#eab308',
+            '事件': '#ef4444',
+            '概念': '#3b82f6',
+        };
+        function buildGraph() {
+            const nodes = [];
+            const links = [];
+            const nodeSet = new Set();
+
+            // 从条目构建节点
+            megaEntries.value.forEach((entry, i) => {
+                const cat = entry.category || '概念';
+                const color = graphColors[cat] || '#6b7280';
+                if (!nodeSet.has(entry.title)) {
+                    nodes.push({ id: entry.title, name: entry.title, category: cat, color, val: 3 });
+                    nodeSet.add(entry.title);
+                }
+                // 关键词作为子节点
+                (entry.keywords || []).forEach(kw => {
+                    if (!nodeSet.has(kw)) {
+                        nodes.push({ id: kw, name: kw, category: '概念', color: '#3b82f6', val: 1 });
+                        nodeSet.add(kw);
+                    }
+                    links.push({ source: entry.title, target: kw });
+                });
+            });
+
+            // 从概念构建节点
+            Object.entries(megaConcepts.value).forEach(([key, items]) => {
+                if (!Array.isArray(items)) return;
+                items.forEach(item => {
+                    if (!nodeSet.has(item)) {
+                        nodes.push({ id: item, name: item, category: key, color: graphColors[key] || '#6b7280', val: 1.5 });
+                        nodeSet.add(item);
+                    }
+                });
+            });
+
+            graphNodes.value = nodes;
+            graphLinks.value = links;
+
+            // 初始化3D图谱
+            this.$nextTick(() => {
+                const container = document.getElementById('graph3d');
+                if (!container) return;
+                container.innerHTML = '';
+
+                graphInstance = ForceGraph3D()(container)
+                    .backgroundColor('#030712')
+                    .graphData({ nodes, links })
+                    .nodeLabel('name')
+                    .nodeColor('color')
+                    .nodeResolution(16)
+                    .linkColor(() => '#374151')
+                    .linkWidth(0.5)
+                    .linkDirectionalParticles(2)
+                    .linkDirectionalParticleWidth(1)
+                    .linkDirectionalParticleColor(() => '#c084fc')
+                    .d3AlphaDecay(0.02)
+                    .d3VelocityDecay(0.3)
+                    .onNodeClick(node => {
+                        // 聚焦节点
+                        const distance = 40;
+                        const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+                        graphInstance.cameraPosition(
+                            { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+                            node, 2000
+                        );
+                    })
+                    .width(container.clientWidth)
+                    .height(400);
+            });
+        }
+        function resetGraph() {
+            if (graphInstance) graphInstance.cameraPosition({ x: 0, y: 0, z: 300 }, { x: 0, y: 0, z: 0 }, 1000);
+        }
+        function toggleGraphPhysics() {
+            graphPhysics.value = !graphPhysics.value;
+            if (graphInstance) {
+                if (graphPhysics.value) graphInstance.d3ReheatSimulation();
+                else graphInstance.pauseAnimation();
+            }
+        }
+
         // Mega Lorebook
         const megaSource = ref('');
         const megaText = ref('');
@@ -761,6 +879,7 @@ createApp({
             lorebooks, showCreateLorebook, newLorebookName, newLorebookDesc, loadLorebooks, createLorebook,
             statusPreset, statusPresets, statusCharName, statusLoading, statusFormData, currentStatusFields, loadStatusPresets, generateStatus,
             megaSource, megaText, megaLoading, megaEntries, megaConcepts, doMegaLorebook, doExtractWorld, saveMegaLorebook,
+            graphNodes, graphLinks, graphColors, graphPhysics, buildGraph, resetGraph, toggleGraphPhysics,
             longTitle, longText, longLoading, longResult, doLongText,
         };
     }
