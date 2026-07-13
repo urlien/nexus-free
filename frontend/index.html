@@ -42,7 +42,8 @@
             </h1>
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
-            <span class="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">v0.5.0</span>
+            <button class="text-xs sm:text-sm text-gray-400 hover:text-purple-400 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-gray-600 hover:border-purple-400 transition-colors">登录</button>
+            <button class="text-xs sm:text-sm bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg transition-colors">注册</button>
         </div>
     </header>
 
@@ -257,6 +258,116 @@
             </div>
 
             <!-- ===== 其他Tab ===== -->
+            <!-- ===== 巨型世界书 ===== -->
+            <div v-if="currentTab === 'megalorebook'" class="fade-in space-y-4">
+                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm font-medium text-gray-400">🕸️ 巨型世界书</span>
+                        <span class="text-xs text-gray-500">AI自动构建完整世界观</span>
+                    </div>
+                    <div class="text-sm text-gray-400 mb-4">输入世界观文本或角色名，AI将自动提取所有世界观概念并生成完整世界书条目。</div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">来源名称（可选）</label>
+                            <input v-model="megaSource" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" placeholder="例: 明日方舟" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">世界观文本</label>
+                            <textarea v-model="megaText" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" rows="8" placeholder="粘贴世界观设定、背景故事、Wiki页面等...&#10;&#10;AI将自动识别：地名、组织、种族、魔法/科技体系、历史事件、重要物品、习俗节日等"></textarea>
+                        </div>
+                        <div class="flex gap-3">
+                            <button @click="doMegaLorebook" :disabled="megaLoading" class="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 px-6 py-2.5 rounded-xl font-medium transition-colors">
+                                {{ megaLoading ? 'AI 生成中...' : '🧠 自动生成世界书' }}
+                            </button>
+                            <button @click="doExtractWorld" :disabled="megaLoading" class="bg-gray-700 hover:bg-gray-600 px-4 py-2.5 rounded-xl transition-colors">
+                                🔍 仅提取概念
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 生成结果 -->
+                <div v-if="megaEntries.length" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-400">生成结果 ({{ megaEntries.length }} 条目)</span>
+                        <button @click="saveMegaLorebook" class="text-xs bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg transition-colors">💾 保存到世界书库</button>
+                    </div>
+                    <div v-for="(entry, i) in megaEntries" :key="i" class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-100">{{ entry.title }}</span>
+                            <span class="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded">{{ entry.category }}</span>
+                        </div>
+                        <div class="text-sm text-gray-400 leading-relaxed">{{ entry.content?.substring(0, 300) }}...</div>
+                        <div v-if="entry.keywords?.length" class="flex flex-wrap gap-1 mt-2">
+                            <span v-for="kw in entry.keywords" :key="kw" class="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded">{{ kw }}</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 提取的概念 -->
+                <div v-if="megaConcepts && Object.keys(megaConcepts).length" class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                    <div class="text-sm font-medium text-gray-400 mb-3">提取的世界观概念</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div v-for="(items, key) in megaConcepts" :key="key" v-if="Array.isArray(items) && items.length">
+                            <div class="text-xs text-purple-400 mb-1">{{ key }}</div>
+                            <div class="flex flex-wrap gap-1">
+                                <span v-for="item in items" :key="item" class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">{{ item }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 长文炼化 ===== -->
+            <div v-if="currentTab === 'longtext'" class="fade-in space-y-4">
+                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm font-medium text-gray-400">📖 长文炼化</span>
+                        <span class="text-xs text-gray-500">TXT/PDF → 角色卡 + 世界观</span>
+                    </div>
+                    <div class="text-sm text-gray-400 mb-4">上传长文本，AI自动提取所有角色信息和世界观概念。</div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">标题（可选）</label>
+                            <input v-model="longTitle" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" placeholder="例: 将进酒 活动剧情" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">长文本</label>
+                            <textarea v-model="longText" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" rows="12" placeholder="粘贴小说、剧情文本、Wiki长文等...&#10;&#10;AI将自动分段处理，提取所有角色和世界观"></textarea>
+                        </div>
+                        <div class="flex gap-3">
+                            <button @click="doLongText" :disabled="longLoading" class="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 px-6 py-2.5 rounded-xl font-medium transition-colors">
+                                {{ longLoading ? 'AI 炼化中...' : '📖 开始炼化' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 炼化结果 -->
+                <div v-if="longResult" class="space-y-3">
+                    <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                        <div class="text-sm font-medium text-gray-400 mb-3">炼化结果：发现 {{ longResult.characters_found || 0 }} 个角色</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div v-for="c in longResult.characters" :key="c.name" class="bg-gray-900/50 rounded-xl p-3 border border-gray-700">
+                                <div class="font-medium text-gray-100 text-sm">{{ c.name }}</div>
+                                <div class="text-xs text-gray-500 mt-1 line-clamp-3">{{ c.description?.substring(0, 150) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="longResult.world_concepts?.length" class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                        <div class="text-sm font-medium text-gray-400 mb-3">世界观概念</div>
+                        <div v-for="(concept, i) in longResult.world_concepts" :key="i" class="mb-3">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <div v-for="(items, key) in concept" :key="key" v-if="Array.isArray(items) && items.length">
+                                    <div class="text-xs text-purple-400 mb-1">{{ key }}</div>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span v-for="item in items.slice(0, 5)" :key="item" class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">{{ item }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 卡片库 ===== -->
             <div v-if="currentTab === 'library'" class="fade-in space-y-4">
                 <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
                     <div class="flex items-center justify-between mb-4">
@@ -279,41 +390,6 @@
                         <div class="text-4xl mb-3 opacity-50">📚</div>
                         <div>卡片库为空</div>
                         <div class="text-xs mt-1">生成角色卡后可保存到这里</div>
-                    </div>
-                </div>
-            </div>
-            <div v-if="currentTab === 'lorebook'" class="fade-in space-y-4">
-                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-sm font-medium text-gray-400">🕸️ 世界书</span>
-                        <button @click="showCreateLorebook = true" class="text-xs bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg transition-colors">+ 新建</button>
-                    </div>
-                    <div v-if="lorebooks.length" class="space-y-3">
-                        <div v-for="lb in lorebooks" :key="lb.id" class="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
-                            <div class="flex items-center justify-between">
-                                <div class="font-medium text-gray-100">{{ lb.name }}</div>
-                                <span class="text-xs text-gray-500">{{ lb.entries?.length || 0 }} 条目</span>
-                            </div>
-                            <div class="text-sm text-gray-500 mt-1">{{ lb.description || '无描述' }}</div>
-                        </div>
-                    </div>
-                    <div v-else class="text-center py-12 text-gray-500">
-                        <div class="text-4xl mb-3 opacity-50">🕸️</div>
-                        <div>还没有世界书</div>
-                    </div>
-                </div>
-                <!-- 新建世界书弹窗 -->
-                <div v-if="showCreateLorebook" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" @click.self="showCreateLorebook = false">
-                    <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 w-full max-w-md">
-                        <h3 class="text-lg font-medium text-gray-100 mb-4">新建世界书</h3>
-                        <div class="space-y-3">
-                            <input v-model="newLorebookName" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 focus:outline-none focus:border-purple-400" placeholder="名称" />
-                            <textarea v-model="newLorebookDesc" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 focus:outline-none focus:border-purple-400" placeholder="描述（可选）" rows="3"></textarea>
-                            <div class="flex gap-2 justify-end">
-                                <button @click="showCreateLorebook = false" class="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">取消</button>
-                                <button @click="createLorebook" class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors">创建</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -395,8 +471,9 @@ createApp({
         const tabs = [
             { id: 'home', label: '首页', icon: '🏠' },
             { id: 'search', label: '搜索', icon: '🔍' },
+            { id: 'megalorebook', label: '巨型世界书', icon: '🕸️' },
+            { id: 'longtext', label: '长文炼化', icon: '📖' },
             { id: 'library', label: '卡片库', icon: '📚' },
-            { id: 'lorebook', label: '世界书', icon: '🕸️' },
             { id: 'status', label: '状态栏', icon: '📊' },
             { id: 'settings', label: '设置', icon: '⚙️' },
         ];
@@ -519,6 +596,65 @@ createApp({
         // Settings
         const settings = ref({ model: 'mimo-v2.5-pro' });
 
+        // Mega Lorebook
+        const megaSource = ref('');
+        const megaText = ref('');
+        const megaLoading = ref(false);
+        const megaEntries = ref([]);
+        const megaConcepts = ref({});
+        async function doMegaLorebook() {
+            if (!megaText.value.trim()) return;
+            megaLoading.value = true;
+            megaEntries.value = [];
+            megaConcepts.value = {};
+            try {
+                const resp = await fetch('/api/lorebook/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: megaText.value, source_name: megaSource.value }) });
+                const data = await resp.json();
+                megaEntries.value = data.entries || [];
+            } catch (e) { console.error(e); }
+            megaLoading.value = false;
+        }
+        async function doExtractWorld() {
+            if (!megaText.value.trim()) return;
+            megaLoading.value = true;
+            megaConcepts.value = {};
+            try {
+                const resp = await fetch('/api/extract/world-concepts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: megaText.value }) });
+                const data = await resp.json();
+                megaConcepts.value = data.concepts || {};
+            } catch (e) { console.error(e); }
+            megaLoading.value = false;
+        }
+        async function saveMegaLorebook() {
+            if (!megaEntries.value.length) return;
+            try {
+                const resp = await fetch('/api/library/lorebooks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: megaSource.value + '世界书', description: '由巨型世界书自动生成' }) });
+                const data = await resp.json();
+                if (data.lorebook?.id) {
+                    for (const entry of megaEntries.value) {
+                        await fetch(`/api/library/lorebooks/${data.lorebook.id}/entries`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
+                    }
+                    alert('世界书已保存');
+                }
+            } catch (e) { alert('保存失败'); }
+        }
+
+        // Long Text
+        const longTitle = ref('');
+        const longText = ref('');
+        const longLoading = ref(false);
+        const longResult = ref(null);
+        async function doLongText() {
+            if (!longText.value.trim()) return;
+            longLoading.value = true;
+            longResult.value = null;
+            try {
+                const resp = await fetch('/api/long-text', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: longText.value, title: longTitle.value }) });
+                longResult.value = await resp.json();
+            } catch (e) { console.error(e); }
+            longLoading.value = false;
+        }
+
         // Library
         const libraryCards = ref([]);
         const libSearch = ref('');
@@ -624,6 +760,8 @@ createApp({
             libraryCards, libSearch, loadLibrary, viewLibraryCard,
             lorebooks, showCreateLorebook, newLorebookName, newLorebookDesc, loadLorebooks, createLorebook,
             statusPreset, statusPresets, statusCharName, statusLoading, statusFormData, currentStatusFields, loadStatusPresets, generateStatus,
+            megaSource, megaText, megaLoading, megaEntries, megaConcepts, doMegaLorebook, doExtractWorld, saveMegaLorebook,
+            longTitle, longText, longLoading, longResult, doLongText,
         };
     }
 }).mount('#app');
