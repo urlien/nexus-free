@@ -2,13 +2,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
 import os
 
 app = FastAPI(
     title="Nexus Free",
     description="虚拟角色检索引擎 - 免费开源版",
-    version="0.2.0",
+    version="0.4.0",
 )
 
 # CORS
@@ -21,16 +20,18 @@ app.add_middleware(
 )
 
 # 注册路由
-from backend.routers import search, generate
+from backend.routers import search, generate, library, status_sheet
 
 app.include_router(search.router)
 app.include_router(generate.router)
+app.include_router(library.router)
+app.include_router(status_sheet.router)
 
 
 @app.get("/api/health")
 async def health():
     """健康检查"""
-    return {"status": "ok", "version": "0.2.0"}
+    return {"status": "ok", "version": "0.4.0"}
 
 
 @app.get("/", response_class=HTMLResponse)

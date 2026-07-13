@@ -2,123 +2,136 @@
 
 **免费开源版** - AI驱动的多源角色搜索 + 角色卡自动生成
 
-> 复刻 kcbuy.cn 的核心功能，完全免费，数据本地存储。
+> 完全复刻 kcbuy.cn 核心功能，全部免费，数据本地存储。
 
-## ✨ 功能
+## ✨ 功能全景
 
 ### 🔍 多源角色搜索（8个数据源）
-| 数据源 | 说明 | 状态 |
-|--------|------|------|
-| Fandom Wiki | 全球最大Wiki平台 | ✅ |
-| 萌娘百科 | 中文二次元百科 | ✅ |
-| PRTS Wiki | 明日方舟专用 | ✅ |
-| B站BWIKI | 国产手游数据 | ✅ |
-| AniList | 50万+动漫角色 | ✅ |
-| Bangumi | 中文ACGN数据库 | ✅ |
-| Wikidata | 跨平台ID映射 | ✅ |
-| 网页搜索 | 通用兜底方案 | ✅ |
+Fandom · 萌娘百科 · PRTS Wiki · B站BWIKI · AniList · Bangumi · Wikidata · 网页搜索
 
-### 🧠 AI分析管道
-- **角色信息提取** - 从任意文本提取结构化角色数据
-- **关系分析** - 发现隐式角色关系（暗恋、敌友转化等）
-- **世界观提取** - 自动识别货币、食物、语言、宗教、组织等
-- **描述合成** - 生成1200-2000字PLists格式描述
-- **对话生成** - SillyTavern格式对话示例
+### 🧠 AI 分析管道（MiMo / DeepSeek / 任意OpenAI兼容API）
+- 角色信息提取 → 结构化数据
+- 隐式关系分析 → 暗恋、敌友转化等
+- 世界观概念提取 → 货币/食物/语言/宗教/组织
+- PLists 描述合成 → 1200-2000字社区标准格式
+- 对话示例生成 → SillyTavern mes_example
+- 世界书条目生成 → 200-5000字详细条目
 
-### 📝 角色卡生成
-- **一键生成** - 输入角色名+原始文本 → 完整角色卡
-- **SillyTavern V2 格式** - 标准导出，直接导入使用
-- **多情境开场** - 5条不同场景的alternate_greetings
+### 📝 角色卡系统
+- 一键生成：角色名 + 原始文本 → 完整 SillyTavern V2 角色卡
+- 多情境开场：5条 alternate_greetings
+- 卡片库：SQLite 本地存储，搜索/筛选/CRUD
+- 导出：SillyTavern V2 JSON 格式
 
 ### 🕸️ 世界书系统
-- **单条目生成** - 输入概念 → 详细世界书条目
-- **自动生成** - 从文本批量提取世界观 → 完整世界书
-- **SillyTavern Lorebook 格式** - 直接导入
+- 单条目生成：输入概念 → 详细世界书条目
+- 自动批量生成：从文本提取所有世界观 → 完整世界书
+- 世界书管理：创建/查看/删除/条目管理
+
+### 📊 状态栏系统
+- 4种预设：默认 / RPG / 视觉小说 / 简约
+- AI 生成角色状态数据
+- HTML/纯文本双格式渲染
+- 实时预览
 
 ### 📖 长文炼化
-- **TXT/长文本 → 角色信息 + 世界观** - 自动分段处理
-- **多角色识别** - 从长文本中提取所有角色
-
-### 📚 卡片库 & 状态栏
-- 卡片库（开发中）
-- 状态栏生成（开发中）
+- 上传长文本 → 自动提取所有角色 + 世界观
+- 分段处理，支持超长文本
 
 ## 🛠️ 技术栈
 
-- **后端**: Python + FastAPI
-- **前端**: Vue 3
-- **AI**: MiMo v2.5 / DeepSeek（可配置任意OpenAI兼容API）
-- **搜索**: 各wiki公开API（免费）
+| 层 | 技术 |
+|---|---|
+| 后端 | Python 3 + FastAPI |
+| 前端 | Vue 3 (CDN) |
+| 数据库 | SQLite |
+| AI | MiMo v2.5 / DeepSeek (OpenAI兼容) |
+| 搜索 | 8个 Wiki/数据库公开API |
 
 ## 🚀 快速开始
 
 ```bash
 # 1. 配置API
 cp .env.example .env
-# 编辑 .env 填入你的 API Key
+# 编辑 .env 填入 API Key
 
-# 2. 后端
+# 2. 安装依赖
 cd backend
 pip install -r requirements.txt
-uvicorn backend.main:app --reload
 
-# 3. 打开前端
-# 浏览器打开 frontend/index.html
+# 3. 启动
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+# 4. 打开浏览器
+# http://localhost:8000
 ```
 
-## 📡 API 端点
+## 📡 完整 API 端点
 
 ### 搜索
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/api/search?query=角色名` | GET | 多源搜索 |
-| `/api/search?query=角色名&sources=prts,bwiki` | GET | 指定数据源 |
-| `/api/sources` | GET | 列出所有数据源 |
+| `/api/search?query=名&sources=all` | GET | 多源搜索 |
+| `/api/sources` | GET | 数据源列表 |
 
 ### AI 生成
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/api/generate` | POST | AI生成角色卡 |
+| `/api/generate` | POST | 生成角色卡 |
 | `/api/extract/relations` | POST | 提取角色关系 |
-| `/api/extract/world-concepts` | POST | 提取世界观概念 |
+| `/api/extract/world-concepts` | POST | 提取世界观 |
+| `/api/lorebook/entry` | POST | 生成世界书条目 |
+| `/api/lorebook/generate` | POST | 批量生成世界书 |
+| `/api/long-text` | POST | 长文炼化 |
 
-### 世界书
+### 卡片库
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/api/lorebook/entry` | POST | 生成单个条目 |
-| `/api/lorebook/generate` | POST | 自动生成完整世界书 |
+| `/api/library/cards` | GET/POST | 列表/创建 |
+| `/api/library/cards/{id}` | GET/PUT/DELETE | 详情/更新/删除 |
 
-### 长文炼化
+### 世界书库
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/api/long-text` | POST | 长文本→角色+世界观 |
+| `/api/library/lorebooks` | GET/POST | 列表/创建 |
+| `/api/library/lorebooks/{id}` | GET/DELETE | 详情/删除 |
+| `/api/library/lorebooks/{id}/entries` | POST | 添加条目 |
+
+### 状态栏
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/api/status-sheet/presets` | GET | 预设列表 |
+| `/api/status-sheet/render` | POST | 渲染状态栏 |
+| `/api/status-sheet/preview` | POST | 预览HTML |
+| `/api/status-sheet/generate` | POST | AI生成状态 |
 
 ### 导出
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/api/export/card` | POST | 导出SillyTavern V2角色卡 |
+| `/api/export/card` | POST | 导出 SillyTavern V2 |
 
 ## 📝 更新日志
 
+### v0.4.0 (2026-07-13) - 完整功能版
+- ✅ 卡片库系统：SQLite 本地存储 + CRUD + 搜索筛选
+- ✅ 世界书系统：创建/管理/条目添加
+- ✅ 状态栏系统：4种预设 + AI生成 + 渲染预览
+- ✅ 完整前端：搜索/卡片库/世界书/状态栏/AI生成 五大模块
+- ✅ 长文炼化端点
+
 ### v0.3.0 (2026-07-13)
-- ✅ 新增6个搜索源：PRTS、BWIKI、AniList、Bangumi、Wikidata、网页搜索
-- ✅ 世界书系统：单条目生成 + 自动批量生成
-- ✅ 长文炼化：TXT/长文本 → 角色信息 + 世界观
-- ✅ API /sources 端点
+- ✅ 8个搜索源全部完成
+- ✅ 世界书条目生成
+- ✅ 长文炼化
 
 ### v0.2.0 (2026-07-13)
-- ✅ 接入 MiMo API (mimo-flash)
-- ✅ AI角色信息提取管道
-- ✅ 角色关系分析
-- ✅ 世界观概念提取
-- ✅ 完整角色卡生成流程
-- ✅ SillyTavern V2 格式导出
+- ✅ MiMo API 接入
+- ✅ AI 角色分析管道
+- ✅ SillyTavern V2 导出
 
 ### v0.1.0 (2026-06-29)
 - ✅ 项目初始化
-- ✅ FastAPI 后端框架
-- ✅ Fandom/萌娘百科搜索
-- ✅ Vue 3 前端搜索界面
+- ✅ FastAPI + Vue 3 基础框架
 
 ## 📄 License
 

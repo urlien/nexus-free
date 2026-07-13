@@ -1,5 +1,5 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,129 +7,595 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; }
-        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
-        h1 { text-align: center; margin-bottom: 10px; font-size: 2.5em; }
-        .subtitle { text-align: center; color: #888; margin-bottom: 40px; }
-        .search-box { display: flex; gap: 10px; margin-bottom: 30px; }
-        .search-box input { flex: 1; padding: 15px 20px; border: 1px solid #333; border-radius: 8px; background: #1a1a1a; color: #fff; font-size: 16px; }
-        .search-box input:focus { outline: none; border-color: #6366f1; }
-        .search-box button { padding: 15px 30px; border: none; border-radius: 8px; background: #6366f1; color: #fff; font-size: 16px; cursor: pointer; }
-        .search-box button:hover { background: #5558e6; }
-        .search-box button:disabled { background: #333; cursor: not-allowed; }
-        .results { margin-top: 20px; }
-        .result-card { background: #1a1a1a; border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 1px solid #333; }
-        .result-card:hover { border-color: #6366f1; }
-        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .result-name { font-size: 1.3em; font-weight: 600; }
-        .result-source { padding: 4px 8px; background: #6366f1; border-radius: 4px; font-size: 12px; }
-        .result-summary { color: #888; line-height: 1.6; }
-        .result-link { color: #6366f1; text-decoration: none; margin-top: 10px; display: inline-block; }
-        .loading { text-align: center; padding: 40px; color: #888; }
-        .error { text-align: center; padding: 20px; background: #2a1a1a; border-radius: 8px; color: #ff6b6b; }
-        .empty { text-align: center; padding: 60px; background: #1a1a1a; border-radius: 12px; color: #666; }
-        .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 40px; }
-        .feature { background: #1a1a1a; padding: 15px; border-radius: 8px; }
-        .feature h3 { margin-bottom: 8px; font-size: 1em; }
-        .feature p { color: #888; font-size: 13px; }
+        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, 'Microsoft YaHei', sans-serif; }
+        a { color: #58a6ff; text-decoration: none; }
+
+        /* Header */
+        .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+        .logo { font-size: 24px; font-weight: bold; color: #58a6ff; }
+        .logo span { color: #f0883e; }
+        .nav { display: flex; gap: 4px; }
+        .nav button { background: none; border: none; color: #8b949e; padding: 8px 16px; cursor: pointer; border-radius: 6px; font-size: 14px; transition: all 0.2s; }
+        .nav button:hover, .nav button.active { background: #21262d; color: #c9d1d9; }
+
+        /* Layout */
+        .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+        /* Search */
+        .search-box { display: flex; gap: 8px; margin-bottom: 24px; }
+        .search-box input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 12px 16px; border-radius: 8px; font-size: 16px; outline: none; }
+        .search-box input:focus { border-color: #58a6ff; }
+        .search-box button { background: #238636; border: none; color: white; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .search-box button:hover { background: #2ea043; }
+        .search-box button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Source tags */
+        .sources { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+        .source-tag { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+        .source-tag.active { background: #1f6feb33; border-color: #1f6feb; color: #58a6ff; }
+        .source-tag:hover { border-color: #58a6ff; }
+
+        /* Cards */
+        .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; }
+        .card:hover { border-color: #58a6ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .card-title { font-size: 16px; font-weight: 600; color: #e6edf3; margin-bottom: 8px; }
+        .card-source { font-size: 11px; color: #8b949e; background: #21262d; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
+        .card-summary { font-size: 13px; color: #8b949e; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-image { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
+
+        /* Detail panel */
+        .detail-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; justify-content: center; align-items: flex-start; padding: 40px; overflow-y: auto; }
+        .detail-panel { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 32px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .detail-close { float: right; background: none; border: none; color: #8b949e; font-size: 24px; cursor: pointer; }
+        .detail-close:hover { color: #e6edf3; }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; color: #8b949e; font-size: 13px; margin-bottom: 6px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; }
+        .form-group textarea { min-height: 120px; resize: vertical; }
+        .form-group input:focus, .form-group textarea:focus { border-color: #58a6ff; }
+
+        /* Buttons */
+        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+        .btn-primary { background: #238636; color: white; }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+        .btn-secondary:hover { background: #30363d; }
+        .btn-danger { background: #da3633; color: white; }
+        .btn-danger:hover { background: #f85149; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-group { display: flex; gap: 8px; margin-top: 16px; }
+
+        /* Status bar preview */
+        .status-preview { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; font-family: monospace; white-space: pre-wrap; line-height: 1.8; }
+        .status-bar { color: #4ecca3; }
+
+        /* Lorebook */
+        .lorebook-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+        .lorebook-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; }
+        .lorebook-card h3 { color: #e6edf3; margin-bottom: 8px; }
+        .entry-tag { display: inline-block; background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px; }
+
+        /* Loading */
+        .loading { text-align: center; padding: 40px; color: #8b949e; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #30363d; border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        .toast { position: fixed; top: 20px; right: 20px; background: #238636; color: white; padding: 12px 20px; border-radius: 8px; z-index: 200; font-size: 14px; animation: slideIn 0.3s ease; }
+        .toast.error { background: #da3633; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Empty state */
+        .empty { text-align: center; padding: 60px 20px; color: #8b949e; }
+        .empty-icon { font-size: 48px; margin-bottom: 16px; }
     </style>
 </head>
 <body>
     <div id="app">
-        <div class="container">
-            <h1>🔍 Nexus Free</h1>
-            <p class="subtitle">虚拟角色检索引擎 - 免费开源版</p>
-            
-            <div class="search-box">
-                <input 
-                    v-model="query" 
-                    @keyup.enter="search"
-                    placeholder="输入角色名搜索（如: 胡桃、阿米娅）"
-                >
-                <button @click="search" :disabled="loading">
-                    {{ loading ? '⏳ 搜索中...' : '🔍 搜索' }}
-                </button>
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Nexus <span>Free</span></div>
+            <div class="nav">
+                <button :class="{ active: tab === 'search' }" @click="tab = 'search'">🔍 搜索</button>
+                <button :class="{ active: tab === 'library' }" @click="tab = 'library'; loadLibrary()">📚 卡片库</button>
+                <button :class="{ active: tab === 'lorebook' }" @click="tab = 'lorebook'; loadLorebooks()">🕸️ 世界书</button>
+                <button :class="{ active: tab === 'status' }" @click="tab = 'status'">📊 状态栏</button>
+                <button :class="{ active: tab === 'generate' }" @click="tab = 'generate'">🧠 AI生成</button>
             </div>
-            
-            <div v-if="error" class="error">
-                ❌ {{ error }}
-            </div>
-            
-            <div v-if="loading" class="loading">
-                ⏳ 正在搜索 "{{ query }}"...
-            </div>
-            
-            <div v-if="!loading && results.length > 0" class="results">
-                <div v-for="item in results" :key="item.name + item.source" class="result-card">
-                    <div class="result-header">
-                        <span class="result-name">{{ item.name }}</span>
-                        <span class="result-source">{{ item.source }}</span>
+        </div>
+
+        <div class="main">
+            <!-- Toast -->
+            <div v-if="toast.show" :class="['toast', toast.type]">{{ toast.message }}</div>
+
+            <!-- ===== 搜索 ===== -->
+            <div v-if="tab === 'search'">
+                <div class="search-box">
+                    <input v-model="searchQuery" placeholder="输入角色名搜索..." @keyup.enter="doSearch" />
+                    <button @click="doSearch" :disabled="searching">
+                        {{ searching ? '搜索中...' : '搜索' }}
+                    </button>
+                </div>
+                <div class="sources">
+                    <span v-for="s in allSources" :key="s.id"
+                          :class="['source-tag', { active: selectedSources.includes(s.id) }]"
+                          @click="toggleSource(s.id)">
+                        {{ s.name }}
+                    </span>
+                </div>
+
+                <div v-if="searching" class="loading"><span class="spinner"></span>正在搜索 {{ selectedSources.length }} 个数据源...</div>
+
+                <div v-else-if="searchResults.length" class="results">
+                    <div v-for="r in searchResults" :key="r.source + r.name" class="card" @click="selectResult(r)">
+                        <img v-if="r.image" :src="r.image" class="card-image" loading="lazy" />
+                        <div class="card-source">{{ r.source }}</div>
+                        <div class="card-title">{{ r.name }}</div>
+                        <div class="card-summary">{{ r.summary }}</div>
                     </div>
-                    <div class="result-summary">{{ item.summary || '暂无摘要' }}</div>
-                    <a v-if="item.url" :href="item.url" target="_blank" class="result-link">
-                        🔗 查看详情
-                    </a>
+                </div>
+
+                <div v-else-if="searched" class="empty">
+                    <div class="empty-icon">🔍</div>
+                    <p>没有找到相关结果</p>
+                </div>
+
+                <div v-else class="empty">
+                    <div class="empty-icon">✨</div>
+                    <p>输入角色名开始搜索</p>
+                    <p style="font-size: 13px; margin-top: 8px;">支持 Fandom、萌娘百科、PRTS、BWIKI、AniList、Bangumi、Wikidata、网页搜索</p>
                 </div>
             </div>
-            
-            <div v-if="!loading && searched && results.length === 0" class="empty">
-                🔍 未找到 "{{ query }}" 的相关结果
+
+            <!-- ===== 卡片库 ===== -->
+            <div v-if="tab === 'library'">
+                <div class="search-box">
+                    <input v-model="libSearch" placeholder="搜索卡片库..." @keyup.enter="loadLibrary" />
+                    <button @click="loadLibrary">搜索</button>
+                </div>
+
+                <div v-if="libraryCards.length" class="results">
+                    <div v-for="c in libraryCards" :key="c.id" class="card" @click="viewCard(c)">
+                        <img v-if="c.image_url" :src="c.image_url" class="card-image" loading="lazy" />
+                        <div class="card-source">{{ c.source || '手动创建' }}</div>
+                        <div class="card-title">{{ c.name }}</div>
+                        <div class="card-summary">{{ c.description?.substring(0, 100) }}</div>
+                    </div>
+                </div>
+                <div v-else class="empty">
+                    <div class="empty-icon">📚</div>
+                    <p>卡片库为空</p>
+                    <p style="font-size: 13px; margin-top: 8px;">搜索角色后可保存到卡片库</p>
+                </div>
             </div>
-            
-            <div v-if="!searched" class="features">
-                <div class="feature">
-                    <h3>🔍 多源搜索</h3>
-                    <p>Fandom、萌娘百科、PRTS、AniList等</p>
+
+            <!-- ===== 世界书 ===== -->
+            <div v-if="tab === 'lorebook'">
+                <div class="btn-group" style="margin-bottom: 16px;">
+                    <button class="btn btn-primary" @click="showCreateLorebook = true">+ 新建世界书</button>
                 </div>
-                <div class="feature">
-                    <h3>🧠 AI分析</h3>
-                    <p>自动提取角色关系、世界观</p>
+
+                <div v-if="lorebooks.length" class="lorebook-list">
+                    <div v-for="lb in lorebooks" :key="lb.id" class="lorebook-card" @click="viewLorebook(lb)">
+                        <h3>{{ lb.name }}</h3>
+                        <p style="color: #8b949e; font-size: 13px;">{{ lb.description || '无描述' }}</p>
+                        <p style="color: #58a6ff; font-size: 12px; margin-top: 8px;">{{ lb.entries?.length || 0 }} 个条目</p>
+                    </div>
                 </div>
-                <div class="feature">
-                    <h3>📝 角色卡生成</h3>
-                    <p>SillyTavern V2标准格式</p>
+                <div v-else class="empty">
+                    <div class="empty-icon">🕸️</div>
+                    <p>还没有世界书</p>
                 </div>
-                <div class="feature">
-                    <h3>🕸️ 巨型世界书</h3>
-                    <p>AI自动构建世界观</p>
+            </div>
+
+            <!-- ===== 状态栏 ===== -->
+            <div v-if="tab === 'status'">
+                <div class="form-group">
+                    <label>选择预设</label>
+                    <select v-model="statusPreset">
+                        <option v-for="p in statusPresets" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>角色名</label>
+                    <input v-model="statusCharName" placeholder="输入角色名" />
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" @click="generateStatus" :disabled="statusLoading">
+                        {{ statusLoading ? '生成中...' : 'AI 生成状态数据' }}
+                    </button>
+                </div>
+
+                <div v-if="statusPreview" style="margin-top: 20px;">
+                    <h3 style="margin-bottom: 12px; color: #e6edf3;">预览</h3>
+                    <div class="status-preview" v-html="statusPreview"></div>
+                </div>
+            </div>
+
+            <!-- ===== AI生成 ===== -->
+            <div v-if="tab === 'generate'">
+                <div class="form-group">
+                    <label>角色名 *</label>
+                    <input v-model="genName" placeholder="例: 黍" />
+                </div>
+                <div class="form-group">
+                    <label>来源</label>
+                    <input v-model="genSource" placeholder="例: 明日方舟" />
+                </div>
+                <div class="form-group">
+                    <label>原始文本 *</label>
+                    <textarea v-model="genText" placeholder="粘贴角色的Wiki页面、设定文本等..."></textarea>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" @click="doGenerate" :disabled="generating">
+                        {{ generating ? 'AI 生成中...' : '生成角色卡' }}
+                    </button>
+                    <button class="btn btn-secondary" @click="doExtractRelations" :disabled="generating">提取关系</button>
+                    <button class="btn btn-secondary" @click="doExtractWorld" :disabled="generating">提取世界观</button>
+                    <button class="btn btn-secondary" @click="doGenLorebook" :disabled="generating">生成世界书</button>
+                    <button class="btn btn-secondary" @click="doLongText" :disabled="generating">长文炼化</button>
+                </div>
+
+                <!-- 生成结果 -->
+                <div v-if="genResult" style="margin-top: 24px;">
+                    <h3 style="margin-bottom: 12px; color: #e6edf3;">生成结果</h3>
+                    <div class="detail-panel" style="position: static; max-height: none;">
+                        <div v-if="genResult.card" class="form-group">
+                            <label>角色卡 (SillyTavern V2)</label>
+                            <textarea :value="JSON.stringify(genResult.card, null, 2)" readonly style="min-height: 300px; font-family: monospace; font-size: 12px;"></textarea>
+                            <div class="btn-group">
+                                <button class="btn btn-primary btn-sm" @click="saveToLibrary(genResult.card)">💾 保存到卡片库</button>
+                                <button class="btn btn-secondary btn-sm" @click="downloadJSON(genResult.card, genResult.card.name + '.json')">📥 下载JSON</button>
+                            </div>
+                        </div>
+                        <div v-if="genResult.relations" class="form-group">
+                            <label>角色关系</label>
+                            <pre style="background: #0d1117; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px;">{{ JSON.stringify(genResult.relations, null, 2) }}</pre>
+                        </div>
+                        <div v-if="genResult.concepts" class="form-group">
+                            <label>世界观概念</label>
+                            <pre style="background: #0d1117; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px;">{{ JSON.stringify(genResult.concepts, null, 2) }}</pre>
+                        </div>
+                        <div v-if="genResult.entries" class="form-group">
+                            <label>世界书条目 ({{ genResult.entries.length }})</label>
+                            <div v-for="entry in genResult.entries" :key="entry.title" style="margin-bottom: 12px; background: #0d1117; padding: 12px; border-radius: 8px;">
+                                <strong style=" color: #e6edf3;">{{ entry.title }}</strong>
+                                <span class="entry-tag">{{ entry.category }}</span>
+                                <p style="margin-top: 8px; font-size: 13px; color: #8b949e;">{{ entry.content?.substring(0, 200) }}...</p>
+                            </div>
+                        </div>
+                        <div v-if="genResult.characters_found !== undefined" class="form-group">
+                            <label>长文炼化结果：发现 {{ genResult.characters_found }} 个角色</label>
+                            <div v-for="c in genResult.characters" :key="c.name" style="margin-bottom: 8px; background: #0d1117; padding: 12px; border-radius: 8px;">
+                                <strong>{{ c.name }}</strong>
+                                <p style="font-size: 13px; color: #8b949e; margin-top: 4px;">{{ c.description?.substring(0, 150) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 详情弹窗 ===== -->
+            <div v-if="detailCard" class="detail-overlay" @click.self="detailCard = null">
+                <div class="detail-panel">
+                    <button class="detail-close" @click="detailCard = null">✕</button>
+                    <h2 style="color: #e6edf3; margin-bottom: 20px;">{{ detailCard.name }}</h2>
+                    <div v-if="detailCard.description" class="form-group">
+                        <label>描述</label>
+                        <div style="white-space: pre-wrap; line-height: 1.6;">{{ detailCard.description }}</div>
+                    </div>
+                    <div v-if="detailCard.personality" class="form-group">
+                        <label>性格</label>
+                        <div>{{ detailCard.personality }}</div>
+                    </div>
+                    <div v-if="detailCard.scenario" class="form-group">
+                        <label>场景</label>
+                        <div>{{ detailCard.scenario }}</div>
+                    </div>
+                    <div v-if="detailCard.first_mes" class="form-group">
+                        <label>开场白</label>
+                        <div style="white-space: pre-wrap;">{{ detailCard.first_mes }}</div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-sm" @click="exportCard(detailCard)">📥 导出JSON</button>
+                        <button v-if="detailCard.id" class="btn btn-danger btn-sm" @click="deleteCard(detailCard.id)">🗑️ 删除</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 创建世界书弹窗 ===== -->
+            <div v-if="showCreateLorebook" class="detail-overlay" @click.self="showCreateLorebook = false">
+                <div class="detail-panel" style="max-width: 500px;">
+                    <button class="detail-close" @click="showCreateLorebook = false">✕</button>
+                    <h2 style="color: #e6edf3; margin-bottom: 20px;">新建世界书</h2>
+                    <div class="form-group">
+                        <label>名称</label>
+                        <input v-model="newLorebookName" placeholder="例: 泰拉世界书" />
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <textarea v-model="newLorebookDesc" placeholder="可选描述"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" @click="createLorebook">创建</button>
+                        <button class="btn btn-secondary" @click="showCreateLorebook = false">取消</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <script>
-        const { createApp, ref } = Vue;
-        
+        const { createApp, ref, onMounted } = Vue;
+
+        const API = window.location.origin + '/api';
+
         createApp({
             setup() {
-                const query = ref('');
-                const results = ref([]);
-                const loading = ref(false);
-                const error = ref('');
-                const searched = ref(false);
-                
-                const search = async () => {
-                    if (!query.value.trim()) return;
-                    
-                    loading.value = true;
-                    error.value = '';
-                    searched.value = true;
-                    
+                const tab = ref('search');
+                const toast = ref({ show: false, message: '', type: '' });
+
+                function showToast(msg, type = '') {
+                    toast.value = { show: true, message: msg, type };
+                    setTimeout(() => toast.value.show = false, 3000);
+                }
+
+                async function api(path, opts = {}) {
                     try {
-                        const resp = await fetch('/api/search?query=' + encodeURIComponent(query.value));
-                        if (!resp.ok) throw new Error('搜索请求失败');
-                        
-                        const data = await resp.json();
-                        results.value = data.results || [];
+                        const resp = await fetch(API + path, {
+                            headers: { 'Content-Type': 'application/json' },
+                            ...opts,
+                        });
+                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                        return await resp.json();
                     } catch (e) {
-                        error.value = e.message;
-                        results.value = [];
-                    } finally {
-                        loading.value = false;
+                        showToast('请求失败: ' + e.message, 'error');
+                        throw e;
                     }
+                }
+
+                // === Search ===
+                const searchQuery = ref('');
+                const searching = ref(false);
+                const searched = ref(false);
+                const searchResults = ref([]);
+                const selectedSources = ref(['all']);
+                const allSources = ref([
+                    { id: 'all', name: '全部' },
+                    { id: 'fandom', name: 'Fandom' },
+                    { id: 'moegirl', name: '萌娘百科' },
+                    { id: 'prts', name: 'PRTS' },
+                    { id: 'bwiki', name: 'BWIKI' },
+                    { id: 'anilist', name: 'AniList' },
+                    { id: 'bangumi', name: 'Bangumi' },
+                    { id: 'wikidata', name: 'Wikidata' },
+                    { id: 'web', name: '网页搜索' },
+                ]);
+
+                function toggleSource(id) {
+                    if (id === 'all') {
+                        selectedSources.value = ['all'];
+                    } else {
+                        selectedSources.value = selectedSources.value.filter(s => s !== 'all');
+                        const idx = selectedSources.value.indexOf(id);
+                        if (idx >= 0) selectedSources.value.splice(idx, 1);
+                        else selectedSources.value.push(id);
+                        if (!selectedSources.value.length) selectedSources.value = ['all'];
+                    }
+                }
+
+                async function doSearch() {
+                    if (!searchQuery.value.trim()) return;
+                    searching.value = true;
+                    searched.value = true;
+                    try {
+                        const data = await api(`/search?query=${encodeURIComponent(searchQuery.value)}&sources=${selectedSources.value.join(',')}`);
+                        searchResults.value = data.results || [];
+                    } catch (e) { searchResults.value = []; }
+                    searching.value = false;
+                }
+
+                // === Library ===
+                const libraryCards = ref([]);
+                const libSearch = ref('');
+
+                async function loadLibrary() {
+                    try {
+                        const data = await api(`/library/cards?search=${encodeURIComponent(libSearch.value)}`);
+                        libraryCards.value = data.cards || [];
+                    } catch (e) { libraryCards.value = []; }
+                }
+
+                async function saveToLibrary(card) {
+                    try {
+                        await api('/library/cards', { method: 'POST', body: JSON.stringify(card) });
+                        showToast('已保存到卡片库');
+                    } catch (e) {}
+                }
+
+                async function deleteCard(id) {
+                    if (!confirm('确定删除？')) return;
+                    try {
+                        await api(`/library/cards/${id}`, { method: 'DELETE' });
+                        detailCard.value = null;
+                        showToast('已删除');
+                        loadLibrary();
+                    } catch (e) {}
+                }
+
+                // === Lorebooks ===
+                const lorebooks = ref([]);
+                const showCreateLorebook = ref(false);
+                const newLorebookName = ref('');
+                const newLorebookDesc = ref('');
+
+                async function loadLorebooks() {
+                    try {
+                        const data = await api('/library/lorebooks');
+                        lorebooks.value = data.lorebooks || [];
+                    } catch (e) { lorebooks.value = []; }
+                }
+
+                async function createLorebook() {
+                    if (!newLorebookName.value.trim()) return;
+                    try {
+                        await api('/library/lorebooks', {
+                            method: 'POST',
+                            body: JSON.stringify({ name: newLorebookName.value, description: newLorebookDesc.value }),
+                        });
+                        showCreateLorebook.value = false;
+                        newLorebookName.value = '';
+                        newLorebookDesc.value = '';
+                        showToast('世界书已创建');
+                        loadLorebooks();
+                    } catch (e) {}
+                }
+
+                // === Status Sheet ===
+                const statusPreset = ref('default');
+                const statusPresets = ref([]);
+                const statusCharName = ref('');
+                const statusPreview = ref('');
+                const statusLoading = ref(false);
+
+                async function loadPresets() {
+                    try {
+                        const data = await api('/status-sheet/presets');
+                        statusPresets.value = data.presets || [];
+                    } catch (e) {}
+                }
+
+                async function generateStatus() {
+                    if (!statusCharName.value.trim()) return;
+                    statusLoading.value = true;
+                    try {
+                        const data = await api('/status-sheet/generate', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                character_name: statusCharName.value,
+                                preset: statusPreset.value,
+                            }),
+                        });
+                        statusPreview.value = data.text || '';
+                    } catch (e) {}
+                    statusLoading.value = false;
+                }
+
+                // === AI Generate ===
+                const genName = ref('');
+                const genSource = ref('');
+                const genText = ref('');
+                const generating = ref(false);
+                const genResult = ref(null);
+
+                async function doGenerate() {
+                    if (!genName.value || !genText.value) { showToast('请填写角色名和文本', 'error'); return; }
+                    generating.value = true;
+                    genResult.value = null;
+                    try {
+                        const data = await api('/generate', {
+                            method: 'POST',
+                            body: JSON.stringify({ name: genName.value, source_data: genText.value, source: genSource.value }),
+                        });
+                        genResult.value = data;
+                        showToast('角色卡生成完成');
+                    } catch (e) {}
+                    generating.value = false;
+                }
+
+                async function doExtractRelations() {
+                    if (!genText.value) { showToast('请填写文本', 'error'); return; }
+                    generating.value = true;
+                    genResult.value = null;
+                    try {
+                        const data = await api('/extract/relations', {
+                            method: 'POST',
+                            body: JSON.stringify({ text: genText.value }),
+                        });
+                        genResult.value = data;
+                    } catch (e) {}
+                    generating.value = false;
+                }
+
+                async function doExtractWorld() {
+                    if (!genText.value) { showToast('请填写文本', 'error'); return; }
+                    generating.value = true;
+                    genResult.value = null;
+                    try {
+                        const data = await api('/extract/world-concepts', {
+                            method: 'POST',
+                            body: JSON.stringify({ text: genText.value }),
+                        });
+                        genResult.value = data;
+                    } catch (e) {}
+                    generating.value = false;
+                }
+
+                async function doGenLorebook() {
+                    if (!genText.value) { showToast('请填写文本', 'error'); return; }
+                    generating.value = true;
+                    genResult.value = null;
+                    try {
+                        const data = await api('/lorebook/generate', {
+                            method: 'POST',
+                            body: JSON.stringify({ text: genText.value, source_name: genSource.value }),
+                        });
+                        genResult.value = data;
+                        showToast(`生成了 ${data.count || 0} 个世界书条目`);
+                    } catch (e) {}
+                    generating.value = false;
+                }
+
+                async function doLongText() {
+                    if (!genText.value) { showToast('请填写文本', 'error'); return; }
+                    generating.value = true;
+                    genResult.value = null;
+                    try {
+                        const data = await api('/long-text', {
+                            method: 'POST',
+                            body: JSON.stringify({ text: genText.value, title: genName.value }),
+                        });
+                        genResult.value = data;
+                        showToast(`发现 ${data.characters_found || 0} 个角色`);
+                    } catch (e) {}
+                    generating.value = false;
+                }
+
+                // === Detail ===
+                const detailCard = ref(null);
+                function selectResult(r) { detailCard.value = r; }
+                function viewCard(c) { detailCard.value = c; }
+                function viewLorebook(lb) { /* TODO */ showToast('世界书详情开发中'); }
+
+                function exportCard(card) {
+                    downloadJSON(card, (card.name || 'card') + '.json');
+                }
+
+                function downloadJSON(data, filename) {
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = filename; a.click();
+                    URL.revokeObjectURL(url);
+                }
+
+                onMounted(() => { loadPresets(); });
+
+                return {
+                    tab, toast, showToast,
+                    searchQuery, searching, searched, searchResults, selectedSources, allSources,
+                    toggleSource, doSearch,
+                    libraryCards, libSearch, loadLibrary, saveToLibrary, deleteCard,
+                    lorebooks, showCreateLorebook, newLorebookName, newLorebookDesc,
+                    loadLorebooks, createLorebook,
+                    statusPreset, statusPresets, statusCharName, statusPreview, statusLoading, generateStatus,
+                    genName, genSource, genText, generating, genResult,
+                    doGenerate, doExtractRelations, doExtractWorld, doGenLorebook, doLongText,
+                    detailCard, selectResult, viewCard, viewLorebook, exportCard, downloadJSON,
                 };
-                
-                return { query, results, loading, error, searched, search };
             }
         }).mount('#app');
     </script>
