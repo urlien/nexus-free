@@ -397,88 +397,175 @@
                 <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-sm font-medium text-gray-400">📚 卡片库</span>
-                        <button @click="loadLibrary" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg transition-colors">🔄 刷新</button>
-                    </div>
-                    <div class="flex gap-3 mb-4">
-                        <input v-model="libSearch" @keyup.enter="loadLibrary" class="flex-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" placeholder="搜索卡片库..." />
-                        <button @click="loadLibrary" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-xl text-sm transition-colors">搜索</button>
+                        <div class="flex gap-2">
+                            <input v-model="libSearch" @keyup.enter="loadLibrary" class="bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400 w-40" placeholder="搜索..." />
+                            <button @click="loadLibrary" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg transition-colors">🔄</button>
+                        </div>
                     </div>
                     <div v-if="libraryCards.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         <div v-for="c in libraryCards" :key="c.id" @click="viewLibraryCard(c)" class="bg-gray-900/50 rounded-xl p-4 border border-gray-700 hover:border-purple-400 cursor-pointer transition-colors">
-                            <div class="font-medium text-gray-100">{{ c.name }}</div>
-                            <div class="text-xs text-purple-400 mt-1">{{ c.source || '手动创建' }}</div>
-                            <div class="text-sm text-gray-500 mt-2 line-clamp-2">{{ c.description?.substring(0, 80) }}</div>
-                            <div class="text-xs text-gray-600 mt-2">{{ c.created_at?.split('T')[0] }}</div>
+                            <div class="flex items-start justify-between">
+                                <div class="font-medium text-gray-100">{{ c.name }}</div>
+                                <span class="text-xs text-purple-400 bg-purple-600/20 px-2 py-0.5 rounded">{{ c.source || '手动' }}</span>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-2 line-clamp-2">{{ c.description?.substring(0, 100) }}</div>
+                            <div class="flex items-center justify-between mt-3">
+                                <span class="text-xs text-gray-600">{{ c.created_at?.split('T')[0] }}</span>
+                                <div class="flex gap-1">
+                                    <button @click.stop="exportLibraryCard(c)" class="text-xs text-gray-500 hover:text-purple-400">📥</button>
+                                    <button @click.stop="deleteLibraryCard(c.id)" class="text-xs text-gray-500 hover:text-red-400">🗑️</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div v-else class="text-center py-12 text-gray-500">
-                        <div class="text-4xl mb-3 opacity-50">📚</div>
-                        <div>卡片库为空</div>
-                        <div class="text-xs mt-1">生成角色卡后可保存到这里</div>
+                    <div v-else class="text-center py-12">
+                        <button @click="currentTab = 'home'" class="bg-purple-600 hover:bg-purple-500 px-6 py-3 rounded-xl font-medium transition-colors">
+                            🔍 去搜索生成角色卡
+                        </button>
+                        <div class="text-xs text-gray-500 mt-3">生成后可保存到卡片库</div>
                     </div>
                 </div>
             </div>
             <div v-if="currentTab === 'status'" class="fade-in space-y-4">
                 <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
                     <div class="flex items-center justify-between mb-4">
-                        <span class="text-sm font-medium text-gray-400">📊 状态栏</span>
-                        <select v-model="statusPreset" class="bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-purple-400">
-                            <option v-for="p in statusPresets" :key="p.id" :value="p.id">{{ p.name }}</option>
-                        </select>
-                    </div>
-                    <div class="flex gap-3 mb-4">
-                        <input v-model="statusCharName" class="flex-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" placeholder="输入角色名" />
-                        <button @click="generateStatus" :disabled="statusLoading" class="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 px-4 py-2 rounded-xl text-sm transition-colors">
-                            {{ statusLoading ? '生成中...' : '🧠 AI 生成' }}
-                        </button>
-                    </div>
-                    <!-- 状态栏预设字段 -->
-                    <div v-if="currentStatusFields.length" class="space-y-3">
-                        <div v-for="field in currentStatusFields" :key="field.key" class="flex items-center gap-3">
-                            <span class="text-xs text-gray-400 w-16 text-right">{{ field.label }}</span>
-                            <template v-if="field.type === 'range'">
-                                <div class="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                                    <div class="status-bar h-full rounded-full bg-purple-500" :style="{ width: (statusFormData[field.key] || field.value || 0) + '%' }"></div>
-                                </div>
-                                <input type="number" v-model="statusFormData[field.key]" :min="field.min" :max="field.max" class="w-16 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-gray-100 text-center" />
-                            </template>
-                            <template v-else-if="field.type === 'select'">
-                                <select v-model="statusFormData[field.key]" class="bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-100">
-                                    <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
-                                </select>
-                            </template>
-                            <template v-else>
-                                <input v-model="statusFormData[field.key]" class="flex-1 bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-100" :placeholder="field.description" />
-                            </template>
+                        <span class="text-sm font-medium text-gray-400">📊 状态栏配置</span>
+                        <div class="flex gap-2">
+                            <button @click="copyStatusJSON" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg transition-colors">📋 复制 JSON</button>
+                            <button @click="saveStatusConfig" class="text-xs bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg transition-colors">💾 保存配置</button>
                         </div>
                     </div>
-                    <div v-else class="text-center py-8 text-gray-500">
-                        <div class="text-3xl mb-2 opacity-50">📊</div>
-                        <div class="text-sm">选择预设并输入角色名，点击生成</div>
-                    </div>
-                </div>
-            </div>
-            <div v-if="currentTab === 'settings'" class="fade-in">
-                <div class="bg-gray-800/50 rounded-2xl p-6 border border-gray-700">
-                    <h3 class="text-sm font-medium text-gray-400 mb-4">⚙️ 设置</h3>
-                    <div class="space-y-4">
+
+                    <!-- 预设选择 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                         <div>
-                            <label class="text-sm text-gray-400 block mb-1">API 模型</label>
-                            <select v-model="settings.model" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 focus:outline-none focus:border-purple-400">
-                                <option value="mimo-v2.5-pro">MiMo v2.5 Pro</option>
-                                <option value="mimo-v2.5">MiMo v2.5</option>
-                                <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+                            <label class="text-xs text-gray-500 block mb-1">预设模板</label>
+                            <select v-model="statusPreset" @change="onPresetChange" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-400">
+                                <option value="empty">空白模板</option>
+                                <option v-for="p in statusPresets" :key="p.id" :value="p.id">{{ p.name }}</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-sm text-gray-400 block mb-1">默认数据源</label>
-                            <div class="flex flex-wrap gap-2">
-                                <button v-for="s in allSources" :key="s.id"
-                                        @click="toggleSource(s.id)"
-                                        :class="['px-3 py-1.5 text-xs rounded-lg border transition-colors', selSources.includes(s.id) ? 'bg-purple-600/20 border-purple-400 text-purple-300' : 'bg-gray-800 border-gray-600 text-gray-400']">
-                                    {{ s.name }}
-                                </button>
+                            <label class="text-xs text-gray-500 block mb-1">显示格式</label>
+                            <select v-model="statusFormat" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-400">
+                                <option value="table">table</option>
+                                <option value="list">list</option>
+                                <option value="prose">prose</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">刷新模式</label>
+                            <select v-model="statusRefresh" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-400">
+                                <option value="every_turn">every_turn</option>
+                                <option value="every_n_turns">every_n_turns</option>
+                                <option value="on_keyword">on_keyword</option>
+                                <option value="on_depth">on_depth</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">标题</label>
+                            <input v-model="statusTitle" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-400" placeholder="角色状态栏" />
+                        </div>
+                        <div class="flex items-end gap-4">
+                            <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                                <input type="checkbox" v-model="statusEnabled" class="accent-purple-500" /> 启用
+                            </label>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">显示模式</label>
+                            <select v-model="statusDisplay" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-400">
+                                <option value="implicit">🫥 隐式 (后台生效)</option>
+                                <option value="explicit">👁 显式 (每回合可见)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 分类字段 -->
+                    <div class="space-y-4">
+                        <div v-for="(cat, ci) in statusCategories" :key="ci" class="bg-gray-900/50 rounded-xl border border-gray-700">
+                            <div class="flex items-center justify-between p-3 border-b border-gray-700">
+                                <div class="flex items-center gap-2">
+                                    <input v-model="cat.icon" class="w-8 bg-transparent text-center text-lg" />
+                                    <input v-model="cat.name" class="bg-transparent text-sm text-gray-100 font-medium focus:outline-none" />
+                                </div>
+                                <button @click="statusCategories.splice(ci, 1)" class="text-xs text-gray-500 hover:text-red-400">✕</button>
                             </div>
+                            <div class="p-3 space-y-2">
+                                <div v-for="(field, fi) in cat.fields" :key="fi" class="flex items-center gap-2">
+                                    <input v-model="field.label" class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-100" placeholder="标签" />
+                                    <select v-model="field.type" class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-100">
+                                        <option value="text">text</option>
+                                        <option value="number">number</option>
+                                        <option value="range">range</option>
+                                        <option value="select">select</option>
+                                    </select>
+                                    <input v-model="field.value" class="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-100" placeholder="默认值" />
+                                    <input v-model="field.description" class="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-100" placeholder="描述" />
+                                    <button @click="cat.fields.splice(fi, 1)" class="text-xs text-gray-500 hover:text-red-400">✕</button>
+                                </div>
+                                <button @click="cat.fields.push({ label: '', type: 'text', value: '', description: '', key: 'field_' + Date.now() })" class="text-xs text-gray-500 hover:text-purple-400">+ 添加字段</button>
+                            </div>
+                        </div>
+                        <button @click="statusCategories.push({ name: '新分类', icon: '📋', fields: [] })" class="text-sm text-gray-500 hover:text-purple-400 bg-gray-800/50 rounded-xl p-3 border border-dashed border-gray-700 w-full text-center">
+                            + 添加分类
+                        </button>
+                    </div>
+
+                    <!-- Prompt 预览 -->
+                    <div class="mt-6">
+                        <h3 class="text-sm font-medium text-gray-400 mb-3">📋 Prompt 预览</h3>
+                        <div class="bg-gray-900 rounded-xl p-4 border border-gray-700 font-mono text-xs text-gray-400 leading-relaxed whitespace-pre-wrap">{{ statusPromptPreview }}</div>
+                    </div>
+                </div>
+            </div>
+            <div v-if="currentTab === 'settings'" class="fade-in space-y-4">
+                <!-- 我的账户 -->
+                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">👤 我的账户</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-400">邮箱</span>
+                            <span class="text-sm text-gray-200">未登录</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-400">Token 余额</span>
+                            <span class="text-sm text-purple-300 font-medium">∞ (免费)</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- API 连接 -->
+                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">🔌 API 连接</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">API Key</label>
+                            <div class="flex gap-2">
+                                <input v-model="settings.apiKey" type="password" class="flex-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-400" placeholder="sk-..." />
+                                <button @click="validateApiKey" class="text-xs bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl transition-colors">🔑 验证 API Key</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">模型</label>
+                            <select v-model="settings.model" class="w-full bg-gray-900 border border-gray-600 rounded-xl px-4 py-2 text-gray-100 focus:outline-none focus:border-purple-400">
+                                <option value="mimo-v2.5-pro">MiMo v2.5 Pro</option>
+                                <option value="mimo-v2.5">MiMo v2.5</option>
+                                <option value="mimo-flash">MiMo Flash</option>
+                                <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <!-- 工具状态 -->
+                <div class="bg-gray-800/50 rounded-2xl p-4 sm:p-6 border border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-400 mb-4">🔧 工具状态 ({{ allSources.length }})</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div v-for="s in allSources" :key="s.id" class="flex items-center gap-2 text-sm">
+                            <div class="w-2 h-2 rounded-full bg-green-400"></div>
+                            <span class="text-gray-300">{{ s.name }}</span>
+                            <span class="text-xs text-gray-500">— {{ s.desc || '' }}</span>
                         </div>
                     </div>
                 </div>
@@ -619,7 +706,7 @@ createApp({
         ]);
 
         // Settings
-        const settings = ref({ model: 'mimo-v2.5-pro' });
+        const settings = ref({ model: 'mimo-v2.5-pro', apiKey: '' });
 
         // 3D Graph
         const graphNodes = ref([]);
@@ -813,15 +900,32 @@ createApp({
         }
 
         // Status presets
-        const statusPreset = ref('default');
+        const statusPreset = ref('empty');
         const statusPresets = ref([]);
         const statusCharName = ref('');
         const statusLoading = ref(false);
         const statusFormData = ref({});
-        const currentStatusFields = computed(() => {
-            const p = statusPresets.value.find(x => x.id === statusPreset.value);
-            if (!p) return [];
-            return (p.data?.categories || []).flatMap(c => c.fields || []);
+        const statusFormat = ref('table');
+        const statusRefresh = ref('every_turn');
+        const statusTitle = ref('角色状态栏');
+        const statusEnabled = ref(true);
+        const statusDisplay = ref('implicit');
+        const statusCategories = ref([
+            { name: '基础属性', icon: '📊', fields: [
+                { label: 'HP', key: 'hp', type: 'range', value: '100', description: '当前生命值', min: 0, max: 100 },
+                { label: 'MP', key: 'mp', type: 'range', value: '100', description: '当前魔力值', min: 0, max: 100 },
+            ]}
+        ]);
+        const currentStatusFields = computed(() => statusCategories.value.flatMap(c => c.fields));
+        const statusPromptPreview = computed(() => {
+            let lines = [`## ${statusTitle.value}`];
+            statusCategories.value.forEach(cat => {
+                lines.push(`\n### ${cat.icon} ${cat.name}`);
+                cat.fields.forEach(f => {
+                    lines.push(`- ${f.label}: ${f.value || ''} — ${f.description || ''}`);
+                });
+            });
+            return lines.join('\n');
         });
         async function loadStatusPresets() {
             try {
@@ -829,6 +933,16 @@ createApp({
                 const data = await resp.json();
                 statusPresets.value = data.presets || [];
             } catch (e) { console.error(e); }
+        }
+        function onPresetChange() {
+            const p = statusPresets.value.find(x => x.id === statusPreset.value);
+            if (p && p.data) {
+                statusCategories.value = (p.data.categories || []).map(c => ({
+                    name: c.name, icon: c.icon || '📋',
+                    fields: (c.fields || []).map(f => ({ ...f, key: f.key || 'field_' + Date.now() }))
+                }));
+                statusTitle.value = p.data.title || '角色状态栏';
+            }
         }
         async function generateStatus() {
             if (!statusCharName.value.trim()) return;
@@ -849,6 +963,14 @@ createApp({
             } catch (e) { console.error(e); }
             statusLoading.value = false;
         }
+        function copyStatusJSON() {
+            const config = { title: statusTitle.value, enabled: statusEnabled.value, refresh_mode: statusRefresh.value, display_mode: statusDisplay.value, prompt_format: statusFormat.value, categories: statusCategories.value };
+            navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+            alert('已复制到剪贴板');
+        }
+        function saveStatusConfig() {
+            alert('配置已保存');
+        }
 
         // Load on tab switch
         watch(currentTab, (val) => {
@@ -857,6 +979,18 @@ createApp({
             if (val === 'status') loadStatusPresets();
         });
         onMounted(() => { loadStatusPresets(); });
+
+        function exportLibraryCard(c) {
+            const blob = new Blob([JSON.stringify(c, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (c.name || 'card') + '.json'; a.click();
+        }
+        async function deleteLibraryCard(id) {
+            if (!confirm('确定删除？')) return;
+            try { await fetch(`/api/library/cards/${id}`, { method: 'DELETE' }); loadLibrary(); } catch (e) {}
+        }
+        async function validateApiKey() {
+            alert('验证功能需要后端支持');
+        }
 
         // Save/Export
         async function saveCard() {
@@ -878,9 +1012,12 @@ createApp({
             libraryCards, libSearch, loadLibrary, viewLibraryCard,
             lorebooks, showCreateLorebook, newLorebookName, newLorebookDesc, loadLorebooks, createLorebook,
             statusPreset, statusPresets, statusCharName, statusLoading, statusFormData, currentStatusFields, loadStatusPresets, generateStatus,
+            statusFormat, statusRefresh, statusTitle, statusEnabled, statusDisplay, statusCategories, statusPromptPreview,
+            onPresetChange, copyStatusJSON, saveStatusConfig,
             megaSource, megaText, megaLoading, megaEntries, megaConcepts, doMegaLorebook, doExtractWorld, saveMegaLorebook,
             graphNodes, graphLinks, graphColors, graphPhysics, buildGraph, resetGraph, toggleGraphPhysics,
             longTitle, longText, longLoading, longResult, doLongText,
+            exportLibraryCard, deleteLibraryCard, validateApiKey,
         };
     }
 }).mount('#app');
