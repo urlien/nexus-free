@@ -6,8 +6,13 @@
 
 ## ✨ 功能全景
 
-### 🔍 多源角色搜索（8个数据源）
-Fandom · 萌娘百科 · PRTS Wiki · B站BWIKI · AniList · Bangumi · Wikidata · 网页搜索
+### 🔍 多源角色搜索（18个数据源）
+**百科类（9个）**：Fandom · 萌娘百科 · PRTS Wiki · B站BWIKI · AniList · Bangumi · Wikidata · 百度百科 · MyAnimeList
+**社区类（3个）**：知乎 · NGA · 微博
+**攻略类（1个）**：GamePress
+**分析类（1个）**：TV Tropes
+**创作类（3个）**：Pixiv · Danbooru · AO3
+**通用类（1个）**：网页搜索
 
 ### 🧠 AI 分析管道（MiMo / DeepSeek / 任意OpenAI兼容API）
 - 角色信息提取 → 结构化数据
