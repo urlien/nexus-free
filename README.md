@@ -68,8 +68,26 @@ Fandom · 萌娘百科 · PRTS Wiki · B站BWIKI · AniList · Bangumi · Wikida
 
 ## 🚀 快速开始
 
+### 方式一：Docker（推荐）
+
 ```bash
-# 1. 配置API
+# 1. 配置 API
+ cp .env.example .env
+# 编辑 .env 填入 API Key
+
+# 2. 启动
+ bash start.sh
+# 或直接：
+docker compose up -d --build
+
+# 3. 打开浏览器
+# http://localhost:8000
+```
+
+### 方式二：Python 直接运行
+
+```bash
+# 1. 配置 API
 cp .env.example .env
 # 编辑 .env 填入 API Key
 
